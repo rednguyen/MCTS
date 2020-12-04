@@ -88,7 +88,7 @@ class AI:
         self.simulator.reset(node.state)
         self.simulator.place(action[0], action[1])
         child_node = Node(self.simulator.state(), action, node)
-        node.children.append(action, child_node)
+        node.children.append((action, child_node))
 
         return child_node
 
@@ -100,9 +100,18 @@ class AI:
         action_ucb_table = {} # to store the UCB values of each child node (for testing)
 
         # NOTE: deterministic_test() requires iterating in this order
-        for child in node.children:
+        for action, node in node.children:
             # NOTE: deterministic_test() requires, in the case of a tie, choosing the FIRST action with 
             # the maximum upper confidence bound 
+            score = 0
+            if node.num_visits <= 0:
+                score = float('inf')
+            elif node.num_visits > 0:
+                score = node.num_visits + c*sqrt(log(node.num_visits) / node.num_visits)
+            action_ucb_table[action] = score
+            best_child_table[action] = child
+        best_action = max(best_child_table)
+        best_child_node = best_child_table[best_action]
             
 
         return best_child_node, best_action, action_ucb_table
@@ -121,7 +130,7 @@ class AI:
     def rollout(self, node):
         # TODO: rollout (called DefaultPolicy in the slides)
         self.simulator.reset(*node.state)
-        while not self.simulator.game_over:
+        while not node.is_terminal:
             ran_move = self.simulator.rand_move()
             self.simulator.place(ran_move[0], ran_move[1])
             child = Node(self.simulator.state, ran_move, node)
