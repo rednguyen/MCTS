@@ -50,8 +50,9 @@ class AI:
                 print("\riters/budget: {}/{}".format(iters + 1, BUDGET), end="")
 
             # TODO: select a node, rollout, and backpropagate
-            state, action = self.select(self.root)
-
+            node = self.select(self.root)
+            reward = self.rollout(node)
+            self.backpropagate(node, reward)
             iters += 1
         print()
 
@@ -85,7 +86,7 @@ class AI:
  
         action = node.untried_actions.pop(0)
         self.simulator.reset(node.state)
-        self.simulator.place(action[0]), action[1])
+        self.simulator.place(action[0], action[1])
         child_node = Node(self.simulator.state(), action, node)
         node.children.append(action, child_node)
 
@@ -102,7 +103,7 @@ class AI:
         for child in node.children:
             # NOTE: deterministic_test() requires, in the case of a tie, choosing the FIRST action with 
             # the maximum upper confidence bound 
-            pass
+            
 
         return best_child_node, best_action, action_ucb_table
 
@@ -110,10 +111,22 @@ class AI:
         while (node is not None):
             # TODO: backpropagate the information about winner
             # IMPORTANT: each node should store the number of wins for the player of its **parent** node
-            break
+            node.num_visits = node.num_visits + 1
+            if result[BLACK] == 1:
+                node.num_wins = node.num_wins + 1
+            else:
+                node.num_wins = node.num_wins - 1
+            node = node.parent
 
     def rollout(self, node):
         # TODO: rollout (called DefaultPolicy in the slides)
+        self.simulator.reset(*node.state)
+        while not self.simulator.game_over:
+            ran_move = self.simulator.rand_move()
+            self.simulator.place(ran_move[0], ran_move[1])
+            child = Node(self.simulator.state, ran_move, node)
+            node = child
+
 
         # HINT: you may find the following methods useful:
         #   self.simulator.reset(*node.state)
